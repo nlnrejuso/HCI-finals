@@ -1,0 +1,535 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>StockFlow | Warehouse Operations</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+
+<body>
+
+  <!-- ============ LOGIN ============ -->
+  <div id="login-view">
+    <div class="login-card">
+      <div class="logo-tile">◉</div>
+      <h1>StockFlow</h1>
+      <p class="login-sub">Sign in to Warehouse Operations</p>
+      <label>Username / Email</label>
+      <input id="login-user" type="text" autocomplete="username">
+      <label>Password</label>
+      <input id="login-pass" type="password" autocomplete="current-password">
+      <div id="login-error" class="login-error hidden"><span class="err-ic">ⓘ</span> Incorrect username or password
+      </div>
+      <button class="btn primary block" onclick="doLogin()">Log In</button>
+      <p class="login-help">Need help? Contact your system administrator</p>
+    </div>
+  </div>
+
+  <!-- ============ APP ============ -->
+  <div id="app-view" class="hidden">
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="logo-tile sm">◉</div>
+        <div><b>StockFlow</b><span>WAREHOUSE OPS</span></div>
+      </div>
+      <nav>
+        <a class="nav-item" data-page="users"><span class="ni">▤</span> Login / User</a>
+        <a class="nav-item" data-page="dashboard"><span class="ni">▦</span> Dashboard</a>
+        <a class="nav-item" data-page="inventory"><span class="ni">▣</span> Inventory</a>
+        <a class="nav-item" data-page="receiving"><span class="ni">⇩</span> Receiving</a>
+        <a class="nav-item" data-page="orders"><span class="ni">🛒</span> Orders</a>
+        <a class="nav-item" data-page="movement"><span class="ni">⇅</span> Stock Movement</a>
+        <a class="nav-item" data-page="reports"><span class="ni">📈</span> Reports &amp; Notifications</a>
+      </nav>
+      <div class="sidebar-bottom"><a class="nav-item" onclick="logout()"><span class="ni">⇥</span> Logout</a></div>
+    </aside>
+
+    <div class="main">
+      <header class="topbar">
+        <div class="search"><span class="s-ic">⌕</span><input id="global-search"
+            placeholder="Search products, orders, SKUs..."></div>
+        <div class="top-right">
+          <button class="btn primary sm"
+            onclick="toast('Quick Action','Pick an action: Add product, Receive goods, or Create order')">+ Quick
+            Action</button>
+          <button class="bell" onclick="toggleBell()" title="Notifications">🔔<span class="bell-dot"
+              id="bell-dot"></span></button>
+          <div class="profile" onclick="toggleProfile(event)">
+            <div class="avatar">SM</div>
+            <div class="who"><b>StockFlow</b><span>System Admin</span></div>
+            <div id="profile-pop" class="popover hidden">
+              <div class="pop-head">
+                <div class="logo-tile xs">◉</div><b>StockFlow</b><span class="badge green">Warehouse Manager</span>
+              </div>
+              <div class="pop-row">✉ hci.gr4@logistics.com</div>
+              <div class="pop-row">📍 Philippines</div>
+              <button class="btn danger outline block" onclick="logout()">⇥ Log out</button>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <main class="content">
+
+        <!-- ===== DASHBOARD ===== -->
+        <section class="page" id="page-dashboard">
+          <div class="page-head">
+            <div>
+              <h1>Warehouse Dashboard</h1>
+              <p>Today, September 22 &middot; Northstar Distribution Center</p>
+            </div>
+          </div>
+          <div class="stats">
+            <div class="stat">
+              <div class="stat-top"><span>Total Products</span><span class="stat-ic">▤</span></div><b
+                id="stat-products">2,486</b><span class="delta up">+ 4.5% from last week</span>
+            </div>
+            <div class="stat">
+              <div class="stat-top"><span>Available Stock</span><span class="stat-ic">▦</span></div><b
+                id="stat-stock">18,742</b><span class="delta up">+ 2.3% from last week</span>
+            </div>
+            <div class="stat">
+              <div class="stat-top"><span>Low Stock Alert</span><span class="stat-ic warn">◉</span></div><b
+                id="stat-low">24</b><span class="delta down">needs restocking action</span>
+            </div>
+            <div class="stat">
+              <div class="stat-top"><span>Pending Orders</span><span class="stat-ic">▣</span></div><b
+                id="stat-orders">38</b><span class="delta up">+ 8 from last week</span>
+            </div>
+            <div class="stat">
+              <div class="stat-top"><span>Incoming Deliveries</span><span class="stat-ic">⇩</span></div><b
+                id="stat-deliveries">12</b><span class="delta up">+ 4.6% from last week</span>
+            </div>
+          </div>
+          <div class="dash-cols">
+            <div class="panel">
+              <div class="panel-head">
+                <h2>Low Stock Table</h2><span class="chip orange" id="low-chip">24 items</span>
+              </div>
+              <table>
+                <thead>
+                  <tr>
+                    <th>SKU</th>
+                    <th>PRODUCT</th>
+                    <th>QTY</th>
+                    <th>LOCATION</th>
+                    <th>STATUS</th>
+                  </tr>
+                </thead>
+                <tbody id="low-body"></tbody>
+              </table>
+            </div>
+            <div class="panel">
+              <div class="panel-head">
+                <h2>Recent Activity Stream</h2>
+              </div>
+              <ul class="feed" id="feed-list"></ul>
+            </div>
+          </div>
+        </section>
+
+        <!-- ===== INVENTORY ===== -->
+        <section class="page hidden" id="page-inventory">
+          <div class="page-head row">
+            <div>
+              <h1>Inventory Management</h1>
+              <p>Manage product catalog and stock levels</p>
+            </div>
+            <div class="head-actions">
+              <div class="search inline"><span class="s-ic">⌕</span><input id="inv-search"
+                  placeholder="Search inventory..." oninput="filterInventory()"></div>
+              <div class="filter" onclick="toggleMenu(event,'cat-menu')">Status: <b id="cat-label">All</b> ▾
+                <div id="cat-menu" class="menu hidden">
+                  <a onclick="setCat('All',this)"><span class="fdot gray"></span> All</a>
+                  <a onclick="setCat('In Stock',this)"><span class="fdot green"></span> In Stock</a>
+                  <a onclick="setCat('Low Stock',this)"><span class="fdot orange"></span> Low Stock</a>
+                  <a onclick="setCat('Out of Stock',this)"><span class="fdot red"></span> Out of Stock</a>
+                </div>
+              </div>
+              <button class="btn primary sm" onclick="openModal('modal-add')">+ Add Product</button>
+            </div>
+          </div>
+          <div class="panel">
+            <table id="inv-table">
+              <thead>
+                <tr>
+                  <th>SKU</th>
+                  <th>PRODUCT NAME</th>
+                  <th>CATEGORY</th>
+                  <th>QUANTITY</th>
+                  <th>LOCATION</th>
+                  <th>STOCK STATUS</th>
+                  <th>ACTIONS</th>
+                </tr>
+              </thead>
+              <tbody id="inv-body"></tbody>
+            </table>
+          </div>
+        </section>
+
+        <!-- ===== USERS ===== -->
+        <section class="page hidden" id="page-users">
+          <div class="page-head row">
+            <div>
+              <h1>User Management</h1>
+              <p>Manage users, roles, and access permissions</p>
+            </div>
+            <div class="head-actions">
+              <div class="search inline"><span class="s-ic">⌕</span><input id="usr-search" placeholder="Search users..."
+                  oninput="filterUsers()"></div>
+              <button class="btn primary sm" onclick="openModal('modal-user')">+ Invite User</button>
+            </div>
+          </div>
+          <div class="panel">
+            <table id="usr-table">
+              <thead>
+                <tr>
+                  <th>USER ID</th>
+                  <th>NAME</th>
+                  <th>ROLE</th>
+                  <th>STATUS</th>
+                  <th>LAST LOGIN</th>
+                  <th>ACCESS</th>
+                  <th>ACTIONS</th>
+                </tr>
+              </thead>
+              <tbody id="usr-body"></tbody>
+            </table>
+          </div>
+        </section>
+
+        <!-- ===== RECEIVING ===== -->
+        <section class="page hidden" id="page-receiving">
+          <div class="page-head">
+            <div>
+              <h1>Receiving Management</h1>
+              <p>Record and verify incoming goods</p>
+            </div>
+          </div>
+          <div class="recv-cols">
+            <div class="panel">
+              <div class="panel-head">
+                <h2>New Goods Receipt</h2><span class="chip gray" id="rc-status-chip">Draft</span>
+              </div>
+              <div class="form-grid">
+                <label>Supplier<input id="rc-supplier" value="MedSupply Industrial Co."></label>
+                <label>Delivery Number<input id="rc-dn" value="DN-2026-0884"></label>
+                <label>Date<input id="rc-date" value="22 Sep 2026"></label>
+                <label>Receiving Dock<input id="rc-dock" value="Dock 03"></label>
+                <label>Product Name<input id="rc-product" value="Nitrile Gloves - Large"></label>
+                <label>SKU<input id="rc-sku" class="mono" value="SKU-1048"></label>
+                <label>Quantity<input id="rc-qty" value="240 units"></label>
+                <label>Condition status<input id="rc-cond" value="Good - no damage"></label>
+              </div>
+              <label>Receiving Notes<input id="rc-notes" value="12 sealed cartons, packing slip verified"></label>
+              <div class="note ok-note" id="rc-note">✓ Confirming will add 240 units to available stock and create an
+                audit entry.</div>
+              <div class="btn-row">
+                <button class="btn primary" onclick="confirmReceiving()">Confirm Receiving</button>
+                <button class="btn ghost" onclick="resetReceiving()">Cancel</button>
+              </div>
+            </div>
+            <div class="panel side">
+              <div class="panel-head">
+                <h2>Delivery Summary</h2>
+              </div>
+              <div class="sum-row"><span>Purchase Order</span><b class="mono">PO-7842</b></div>
+              <div class="sum-row"><span>Expected</span><b id="sum-expected">240 units</b></div>
+              <div class="sum-row"><span>Received</span><b id="sum-received">0 units</b></div>
+              <div class="sum-row"><span>Variance</span><b id="sum-variance">240</b></div>
+              <div class="sum-row"><span>Destination</span><b class="mono">A-04-12</b></div>
+              <div class="note warn-note"><b class="red">Cancel receipt?</b><span>Unsaved delivery details will be
+                  discarded.</span></div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ===== ORDERS ===== -->
+        <section class="page hidden" id="page-orders">
+          <div class="page-head row">
+            <div>
+              <h1>Order / Picking Management</h1>
+              <p>Prioritize, pick, and complete outbound orders</p>
+            </div>
+            <button class="btn primary sm" onclick="openModal('modal-order')">+ Create Order</button>
+          </div>
+          <div class="tabs">
+            <a class="tab active" onclick="setOrderTab(this,'all')">Pending <b id="tc-pending">16</b></a>
+            <a class="tab" onclick="setOrderTab(this,'Picking')">Picking <b id="tc-picking">9</b></a>
+            <a class="tab" onclick="setOrderTab(this,'Ready')">Ready <b id="tc-ready">5</b></a>
+            <a class="tab" onclick="setOrderTab(this,'Completed')">Completed <b id="tc-done">142</b></a>
+          </div>
+          <div class="panel">
+            <table>
+              <thead>
+                <tr>
+                  <th>ORDER</th>
+                  <th>CUSTOMER</th>
+                  <th>ITEMS</th>
+                  <th>PRIORITY</th>
+                  <th>ASSIGNEE</th>
+                  <th>STATUS</th>
+                  <th>DUE</th>
+                  <th>ACTIONS</th>
+                </tr>
+              </thead>
+              <tbody id="orders-body"></tbody>
+            </table>
+          </div>
+        </section>
+
+        <!-- ===== STOCK MOVEMENT ===== -->
+        <section class="page hidden" id="page-movement">
+          <div class="page-head row">
+            <div>
+              <h1>Stock Movement &amp; Tracking</h1>
+              <p>Immutable inventory audit trail across all warehouse zones</p>
+            </div>
+            <button class="btn ghost sm" onclick="exportMovements()">Export Audit Log</button>
+          </div>
+          <div class="panel filters">
+            <div class="form-grid three">
+              <label>Search SKU or product<input id="mov-search" placeholder="Search movements..."
+                  oninput="filterMovements()"></label>
+              <label>Movement Type<select id="mov-type" onchange="filterMovements()">
+                  <option value="All">All movements</option>
+                  <option>Received</option>
+                  <option>Released</option>
+                  <option>Transferred</option>
+                  <option>Adjusted</option>
+                </select></label>
+              <label>Date range<input value="15 Sep - 22 Sep 2026"></label>
+            </div>
+            <div class="chips" id="mov-chips"></div>
+          </div>
+          <div class="panel">
+            <table>
+              <thead>
+                <tr>
+                  <th>DATE / TIME</th>
+                  <th>SKU / PRODUCT</th>
+                  <th>MOVEMENT TYPE</th>
+                  <th>QTY DELTA</th>
+                  <th>PREVIOUS STOCK</th>
+                  <th>UPDATED STOCK</th>
+                  <th>RESPONSIBLE USER</th>
+                </tr>
+              </thead>
+              <tbody id="mov-body"></tbody>
+            </table>
+            <div class="table-foot" id="mov-foot">Showing 5 of 720 movements &middot; All timestamps use warehouse local
+              time (UTC+08:00)</div>
+          </div>
+        </section>
+
+        <!-- ===== REPORTS ===== -->
+        <section class="page hidden" id="page-reports">
+          <div class="page-head row">
+            <div>
+              <h1>Reports &amp; Notifications</h1>
+              <p>Monitor operational alerts and analyze stock performance</p>
+            </div>
+            <button class="btn primary sm" onclick="toast('Report exported','Download started')">Export Report
+              ▾</button>
+          </div>
+          <div class="tabs">
+            <a class="tab active" onclick="setReportTab(this,'notif')">Notifications <b id="notif-count">5</b></a>
+            <a class="tab" onclick="setReportTab(this,'reports')">Reports</a>
+          </div>
+          <div class="dash-cols">
+            <div id="tab-notif">
+              <div class="panel-head" style="border:none;padding-left:0">
+                <h2>Notifications</h2><span class="chip blue" id="unread-chip">5 unread</span>
+              </div>
+              <div id="notif-list"></div>
+            </div>
+            <div id="tab-reports" class="hidden">
+              <div class="panel-head" style="border:none;padding-left:0">
+                <h2>Stock Analytics</h2><span><button class="btn ghost xs"
+                    onclick="toast('CSV exported','inventory.csv downloaded')">CSV</button> <button class="btn ghost xs"
+                    onclick="toast('PDF exported','report.pdf downloaded')">PDF</button></span>
+              </div>
+              <div class="panel">
+                <h3 class="chart-title">Inventory by Category</h3>
+                <div class="bars" id="cat-bars"></div>
+              </div>
+              <div class="panel">
+                <h3 class="chart-title">Stock Health</h3>
+                <div id="health-list"></div>
+              </div>
+              <div class="panel valuation">
+                <span class="stat-ic">📈</span>
+                <div><b>Weekly Inventory Valuation</b><span>Updated today &middot; auto-recalculates with stock
+                    changes</span></div>
+                <button class="btn ghost xs" onclick="toast('Report opened','Weekly valuation report')">View
+                  Report</button>
+              </div>
+            </div>
+          </div>
+        </section>
+
+      </main>
+    </div>
+  </div>
+
+  <!-- ===== MODAL: ADD PRODUCT ===== -->
+  <div class="modal-back hidden" id="modal-add">
+    <div class="modal">
+      <div class="modal-head">
+        <div>
+          <h2>Add New Product</h2>
+          <p>Create a new catalog item in real-time inventory</p>
+        </div><button class="x" onclick="closeModal('modal-add')">✕</button>
+      </div>
+      <div class="form-grid">
+        <label>Product Name *<input id="np-name" placeholder="e.g. Heavy Duty Steel Bracket"></label>
+        <label>SKU Code<input id="np-sku" class="mono" placeholder="Auto-generated (or type your own)"></label>
+      </div>
+      <label>Category *<select id="np-cat">
+          <option value="">Select inventory category...</option>
+          <option>Safety</option>
+          <option>Packaging</option>
+          <option>Equipment</option>
+          <option>Pallets</option>
+          <option>Other</option>
+        </select></label>
+      <div class="form-grid">
+        <label>Starting Quantity *<input id="np-qty" type="number" value="0" min="0"></label>
+        <label>Reorder Level *<input id="np-reorder" type="number" placeholder="e.g. 50" min="0"></label>
+        <label>Warehouse Location *<select id="np-loc">
+            <option value="">Select zone/aisle...</option>
+            <option>A-04-12</option>
+            <option>B-02-08</option>
+            <option>C-01-03</option>
+            <option>C-08-03</option>
+            <option>D-01-02</option>
+            <option>Yard-02</option>
+          </select></label>
+        <label>Supplier *<select id="np-supplier">
+            <option value="">Select distributor...</option>
+            <option>MedSupply Industrial Co.</option>
+            <option>Apex Retailers Ltd.</option>
+            <option>Harbor Safety Group</option>
+          </select></label>
+      </div>
+      <div class="btn-row end"><button class="btn ghost" onclick="closeModal('modal-add')">Cancel</button><button
+          class="btn green" onclick="addProduct()">Add Product</button></div>
+    </div>
+  </div>
+
+  <!-- ===== MODAL: EDIT PRODUCT ===== -->
+  <div class="modal-back hidden" id="modal-edit">
+    <div class="modal">
+      <div class="modal-head">
+        <div>
+          <h2>Edit Product</h2>
+          <p>Update product information and inventory settings.</p>
+        </div><button class="x" onclick="closeModal('modal-edit')">✕</button>
+      </div>
+      <div class="form-grid">
+        <label>SKU<input id="ep-sku" class="mono" disabled></label>
+        <label>Product Name<input id="ep-name"></label>
+        <label>Category<input id="ep-cat"></label>
+        <label>Quantity<input id="ep-qty" type="number" min="0"></label>
+        <label>Warehouse Location<input id="ep-loc"></label>
+        <label>Reorder Level<input id="ep-reorder" type="number" min="0"></label>
+      </div>
+      <label>Supplier<input id="ep-supplier"></label>
+      <div class="btn-row spread"><button class="btn danger" id="ep-delete" onclick="deleteProduct()">Delete
+          Product</button><span><button class="btn ghost" onclick="closeModal('modal-edit')">Cancel</button> <button
+            class="btn primary" onclick="saveProduct()">Save Changes</button></span></div>
+    </div>
+  </div>
+
+  <!-- ===== MODAL: ADD / INVITE USER ===== -->
+  <div class="modal-back hidden" id="modal-user">
+    <div class="modal">
+      <div class="modal-head">
+        <div>
+          <h2>Invite New User</h2>
+          <p>Add a user and assign their role and access level</p>
+        </div><button class="x" onclick="closeModal('modal-user')">✕</button>
+      </div>
+      <label>Full Name *<input id="nu-name" placeholder="e.g. Juan dela Cruz"></label>
+      <div class="form-grid">
+        <label>Role *<select id="nu-role">
+            <option value="">Select role...</option>
+            <option>System Admin</option>
+            <option>Warehouse Manager</option>
+            <option>Inventory Analyst</option>
+            <option>Receiving Clerk</option>
+            <option>Customer Support</option>
+          </select></label>
+        <label>Access Level *<select id="nu-access">
+            <option value="">Select access...</option>
+            <option>Full Access</option>
+            <option>Ops Only</option>
+            <option>Read Only</option>
+            <option>Limited</option>
+            <option>Support</option>
+          </select></label>
+        <label>Status<select id="nu-status">
+            <option>Pending</option>
+            <option>Active</option>
+          </select></label>
+        <label>Email<input id="nu-email" placeholder="name@logistics.com"></label>
+      </div>
+      <div class="btn-row end"><button class="btn ghost" onclick="closeModal('modal-user')">Cancel</button><button
+          class="btn green" onclick="addUser()">Send Invite &amp; Add User</button></div>
+    </div>
+  </div>
+
+  <!-- ===== MODAL: CREATE ORDER ===== -->
+  <div class="modal-back hidden" id="modal-order">
+    <div class="modal">
+      <div class="modal-head">
+        <div>
+          <h2>Create New Order</h2>
+          <p>Register an outbound order for picking and dispatch</p>
+        </div><button class="x" onclick="closeModal('modal-order')">✕</button>
+      </div>
+      <div class="form-grid">
+        <label>Customer Name *<input id="no-customer" placeholder="e.g. Apex Field Services"></label>
+        <label>Number of Items *<input id="no-items" type="number" value="1" min="1"></label>
+        <label>Priority<select id="no-priority">
+            <option>Normal</option>
+            <option>Urgent</option>
+            <option>High</option>
+          </select></label>
+        <label>Assignee<select id="no-assignee">
+            <option>Unassigned</option>
+            <option>Diego Ruiz</option>
+            <option>Mika Santos</option>
+          </select></label>
+      </div>
+      <div class="btn-row end"><button class="btn ghost" onclick="closeModal('modal-order')">Cancel</button><button
+          class="btn green" onclick="createOrder()">Create Order</button></div>
+    </div>
+  </div>
+
+  <!-- ===== MODAL: PICKING CHECKLIST ===== -->
+  <div class="modal-back hidden" id="modal-picking">
+    <div class="modal">
+      <div class="modal-head">
+        <div>
+          <h2 id="pick-title">Picking Checklist</h2>
+          <p id="pick-sub"></p>
+        </div><button class="x" onclick="closeModal('modal-picking')">✕</button>
+      </div>
+      <div id="pick-list"></div>
+      <div class="note warn-note small"><span id="pick-note"></span></div>
+      <div class="btn-row">
+        <button class="btn danger" onclick="cancelPicking()">Cancel Picking</button>
+        <button class="btn primary" id="btn-complete" disabled onclick="completeOrder()">Complete Order</button>
+        <button class="btn ghost" onclick="toast('Progress saved','Checklist saved')">Save Progress</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="toasts"></div>
+  <script src="js/app.js"></script>
+</body>
+
+</html>
